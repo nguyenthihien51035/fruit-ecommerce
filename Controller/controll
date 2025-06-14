@@ -1,0 +1,185 @@
+<?php
+include('../Model/order_model.php');
+include('../Model/product_model.php');
+session_start();
+?>
+
+<?php
+if (isset($_POST['txtup'])) {
+    if ($_POST['txtnumber'] <= 0) {
+        echo "<script>
+                alert('Bạn không được nhập số âm') 
+                window.location='../Guest/order.php'
+            </script>";
+    } else {
+        if ($_POST['txtnumber'] > $se_fruit['SoLuongSanPham'])
+            echo "Bạn chọn quá số lượng cho phép";
+        else {
+            $total = $se_fruit['GiaSanPham'] * $_POST['txtnumber'];
+            echo $total . "VND";
+        }
+    }
+}
+?>
+
+<?php
+$get_data = new data_order();
+$product_data = new data_product();
+if (isset($_POST['txtSubmit'])) {
+    if ($se_fruit['SoLuongSanPham'] == 0) {
+        echo "<script> alert('Sản phẩm đã mua hết . Bạn vui lòng chọn sản phẩm khác')</script>";
+    } else {
+        if (empty($_POST['txtnumber'])) {
+            echo "<script>alert('Bạn chưa nhập số lương')</script>";
+        } else {
+            if (empty($_SESSION['User'])) {
+                echo "<script>
+                        if(confirm('Bạn phải đăng nhập để thực hiện đặt hàng')) window.location('../Guest/login.php');
+                    </script>";
+            } else {
+                if ($_POST['txtnumber'] > $se_fruit['SoLuongSanPham']) {
+                    echo "<script>alert('số lượng không đủ , bạn vui lòng chọn lại'</script>";
+                } else {
+                    $_SESSION['Product'] = $se_fruit['id_product'];
+                    $number_total = $se_fruit['SoLuongSanPham'] - $_POST['txtnumber'];
+                    $update = $product_data->update_number($number_total, $se_fruit['id_product']);
+                    $insert = $get_data->insert_order(
+                        $se_fruit['id_product'],
+                        $_SESSION['User'],
+                        $_POST['txtnumber'],
+                        $se_fruit['Price'] * $_POST['txtnumber'],
+                        0
+                    );
+                    $select = $get_data->select_order($se_fruit['id_product'], $_SESSION['User']);
+                    foreach ($select as $i_order)
+                        $_SESSION['ID_Order'] = $i_order['id_product'];
+                    if ($insert) {
+                        header('location:check_order.php');
+                    } else
+                        echo "không thành công";
+                }
+            }
+        }
+    }
+}
+?>
+
+
+
+###gia deflate_init
+
+<?php
+ob_start();
+?>
+
+<?php
+session_start();
+?>
+
+<!DOCTYPE html>
+<html>
+
+<?php
+include('head_guest.php');
+?>
+
+<body class="sub_page">
+    <div class="hero_area">
+        <!-- header section strats -->
+        <div class="brand_box">
+            <a class="navbar-brand" href="../Guest/index.php">
+                <span>
+                    Ninom
+                </span>
+            </a>
+        </div>
+        <!-- end header section -->
+    </div>
+
+    <!-- nav section -->
+    <?php
+    include('head_nav_guest.php');
+    ?>
+    <!-- end nav section -->
+    <section class="contact_section layout_padding">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="offset-lg-2 col-md-10 offset-md-1">
+                    <div class="heading_container">
+                        <hr>
+                        <h2>
+                            Order
+                        </h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layout_padding2-top">
+                <div class="row">
+                    <div class="offset-lg-2 col-md-10 offset-md-1">
+                        <?php
+                        include('../Model/product_model.php');
+                        $get_data = new data_product();
+                        $select = $get_data->select_product_id($_GET['order']);
+                        ?>
+                        <form method="POST" action="../Controller/order_controller.php" enctype="multipart/form-data">
+                            <table class="table table-stripper">
+                                <tr>
+                                    <td>Tên hàng</td>
+                                    <td>Hình ảnh</td>
+                                    <td>Đơn giá</td>
+                                    <td colspan="3">Số lượng (nhập số lượng bạn muốn mua)</td>
+                                    <td></td>
+                                </tr>
+                                <?php
+                                foreach ($select as $se_fruit) {
+                                ?>
+                                    <tr>
+                                        <td><?php echo $se_fruit['TenSanPham'] ?></td>
+                                        <td><img src="../Update/<?php echo $se_fruit['HinhAnhSanPham'] ?>" style="width:100px; height:100px"></td>
+                                        <td><?php echo $se_fruit['GiaSanPham'] ?></td>
+                                        <td>
+                                            <input type="number" name="txtnumber" style="width: 100px;" placeholder="1"><br>
+                                            <?php echo "Số lượng tối đa có: " . $se_fruit['SoLuongSanPham']; ?>
+                                        </td>
+                                        <td><input type="submit" name="txtup" value="Update"></td>
+                                        <td><input type="submit" name="txtdel" value="Delete">
+                                            <?php
+                                            if (isset($_POST['txtdel'])) {
+                                                header('location:fruit.php');
+                                            }
+                                            ?>
+                                        </td>
+                                    <?php } ?>
+                                    <td></td>
+                                    </tr>
+
+                                    </tr>
+                                    <td colspan="3" align="center">Tổng tiền</td>
+                                    <td colspan="3">
+                                    </td>
+
+                            </table>
+                            <div>
+                                <center><button type="submit" class="btn btn-info" name="txtSubmit">Xác nhận</button></center>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- end info section -->
+
+
+    <!-- footer section -->
+
+    <script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
+    <script type="text/javascript" src="js/bootstrap.js"></script>
+    <script type="text/javascript" src="js/custom.js"></script>
+
+</body>
+
+</html>
